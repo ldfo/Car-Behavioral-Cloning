@@ -20,8 +20,27 @@ def preprocess(image):
     # resize image
     image = cv2.resize(image, (IM_WIDTH, IM_HEIGHT), cv2.INTER_AREA)
     # rgb2yuv this is what the nvvidia model does
-    # image = cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
     return image
+
+def augment_images(data_dir, center, left, right, steering_angle):
+    # Choose an image from left, center or right and adjust steering angle
+    choice = np.random.choice(3)
+    if choice == 0:
+        image = mpimg.imread(os.path.join(data_dir, left.strip()))
+        steering_angle += 0.2
+    elif choice == 1:
+        image = mpimg.imread(os.path.join(data_dir, right.strip()))
+        steering_angle -= 0.2
+    elif choice ==2:
+        image = mpimg.imread(os.path.join(data_dir, center.strip()))
+
+    # make a random flip on the image
+    if np.random.rand() < 0.5:
+        image = cv2.flip(image, 1)
+        steering_angle = -steering_angle
+
+    return image, steering_angle
 
 def batch_generator(data_dir, image_paths, steering_angles, batch_size, is_training):
     # Generate training image 
@@ -32,7 +51,12 @@ def batch_generator(data_dir, image_paths, steering_angles, batch_size, is_train
         for index in np.random.permutation(image_paths.shape[0]):
             center, left, right = image_paths[index]
             steering_angle = steering_angles[index]
-            image = mpimg.imread(os.path.join(data_dir, center.strip()))
+            if is_training and np.random.rand() < 0.6:
+                # augment data when in training
+                image, steering_angle = augment_images(data_dir, center, left, right, steering_angle)
+            else:
+                # chooses image from center
+                image = mpimg.imread(os.path.join(data_dir, center.strip()))
             # add image and steering angle
             images[i] = preprocess(image)
             steers[i] = steering_angle
@@ -60,13 +84,13 @@ keep_prob = .6
 model = Sequential()
 model.add(Lambda(lambda x: x/127.5-1.0, input_shape=INPUT_SHAPE))
 model.add(Conv2D(24, 5, 5, activation='elu', subsample=(2, 2)))
-# model.add(Conv2D(36, 5, 5, activation='elu', subsample=(2, 2)))
-# model.add(Conv2D(48, 5, 5, activation='elu', subsample=(2, 2)))
-# model.add(Conv2D(64, 3, 3, activation='elu'))
-# model.add(Conv2D(64, 3, 3, activation='elu'))
-# model.add(Dropout(keep_prob))
+model.add(Conv2D(36, 5, 5, activation='elu', subsample=(2, 2)))
+model.add(Conv2D(48, 5, 5, activation='elu', subsample=(2, 2)))
+model.add(Conv2D(64, 3, 3, activation='elu'))
+model.add(Conv2D(64, 3, 3, activation='elu'))
+model.add(Dropout(keep_prob))
 model.add(Flatten())
-# model.add(Dense(100, activation='elu'))
+model.add(Dense(100, activation='elu'))
 model.add(Dense(50, activation='elu'))
 model.add(Dense(10, activation='elu'))
 model.add(Dense(1))
@@ -75,8 +99,8 @@ model.summary()
 # train model
 learning_rate = 1.0e-4
 batch_size = 250
-samples_per_epoch = 50
-nb_epoch = 3
+samples_per_epoch = data_df.shape[0]*50/batch_size
+nb_epoch = 5
 
 checkpoint = ModelCheckpoint('model-{epoch:03d}.h5',
                              monitor='val_loss',
@@ -94,3 +118,5 @@ model.fit_generator(batch_generator(data_dir, X_train, y_train, batch_size, True
                     nb_val_samples=len(X_valid),
                     callbacks=[checkpoint],
                     verbose=1) 
+print('saving')
+model.save('model.h5')
