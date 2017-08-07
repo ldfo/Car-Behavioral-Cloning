@@ -15,7 +15,7 @@ IM_WIDTH = 320
 IM_CHANNELS = 3
 
 def preprocess(image):
-    # remove the sky and the car front
+    # remove the sky
     image = image[60:-25, :, :] 
     # resize image
     image = cv2.resize(image, (IM_WIDTH, IM_HEIGHT), cv2.INTER_AREA)
@@ -51,12 +51,12 @@ def batch_generator(data_dir, image_paths, steering_angles, batch_size, is_train
         for index in np.random.permutation(image_paths.shape[0]):
             center, left, right = image_paths[index]
             steering_angle = steering_angles[index]
-            if is_training and np.random.rand() < 0.6:
-                # augment data when in training
-                image, steering_angle = augment_images(data_dir, center, left, right, steering_angle)
-            else:
+            # if is_training and np.random.rand() < 0.6:
+            #     # augment data when in training
+            #     image, steering_angle = augment_images(data_dir, center, left, right, steering_angle)
+            # else:
                 # chooses image from center
-                image = mpimg.imread(os.path.join(data_dir, center.strip()))
+            image = mpimg.imread(os.path.join(data_dir, center.strip()))
             # add image and steering angle
             images[i] = preprocess(image)
             steers[i] = steering_angle
@@ -67,7 +67,7 @@ def batch_generator(data_dir, image_paths, steering_angles, batch_size, is_train
 
 # load data
 data_dir = './data'
-test_size = .25
+test_size = .05
 
 data_df = pd.read_csv(os.path.join(data_dir,'driving_log.csv'))
 data_df.columns = ['center','left','right','steering','throttle','break','speed']
@@ -80,14 +80,15 @@ X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=test_size,
 # build keras model
 INPUT_SHAPE = (IM_HEIGHT, IM_WIDTH, IM_CHANNELS)
 keep_prob = .6
-
+# https://devblogs.nvidia.com/parallelforall/deep-learning-self-driving-cars/
+# nvidia's network architecture
 model = Sequential()
 model.add(Lambda(lambda x: x/127.5-1.0, input_shape=INPUT_SHAPE))
-model.add(Conv2D(24, 5, 5, activation='elu', subsample=(2, 2)))
-model.add(Conv2D(36, 5, 5, activation='elu', subsample=(2, 2)))
-model.add(Conv2D(48, 5, 5, activation='elu', subsample=(2, 2)))
-model.add(Conv2D(64, 3, 3, activation='elu'))
-model.add(Conv2D(64, 3, 3, activation='elu'))
+model.add(Conv2D(24, 5, activation='elu', strides=(2, 2)))
+model.add(Conv2D(36, 5, activation='elu', strides=(2, 2)))
+model.add(Conv2D(48, 5, activation='elu', strides=(2, 2)))
+model.add(Conv2D(64, 3, activation='elu'))
+model.add(Conv2D(64, 3, activation='elu'))
 model.add(Dropout(keep_prob))
 model.add(Flatten())
 model.add(Dense(100, activation='elu'))
@@ -98,25 +99,18 @@ model.summary()
 
 # train model
 learning_rate = 1.0e-4
-batch_size = 250
-samples_per_epoch = data_df.shape[0]*50/batch_size
-nb_epoch = 5
-
-checkpoint = ModelCheckpoint('model-{epoch:03d}.h5',
-                             monitor='val_loss',
-                             verbose=0,
-                             save_best_only=True,
-                             mode='auto')
+batch_size = 50
+steps_per_epoch = 200
+nb_epoch = 4
 
 model.compile(loss='mean_squared_error', optimizer=Adam(lr=learning_rate))
 
 model.fit_generator(batch_generator(data_dir, X_train, y_train, batch_size, True),
-                    samples_per_epoch,
+                    steps_per_epoch,
                     nb_epoch,
-                    max_q_size=1,
+                    max_queue_size=1,
                     validation_data=batch_generator(data_dir, X_valid, y_valid, batch_size, False),
-                    nb_val_samples=len(X_valid),
-                    callbacks=[checkpoint],
+                    validation_steps=len(X_valid),
                     verbose=1) 
 print('saving')
 model.save('model.h5')
