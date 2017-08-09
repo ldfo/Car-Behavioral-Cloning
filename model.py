@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 from keras.models import Sequential
 from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint
-from keras.layers import Lambda, Conv2D, MaxPooling2D, Dropout, Dense, Flatten
+from keras.layers import Lambda, Conv2D, MaxPooling2D, Dropout, Dense, Flatten, Cropping2D
 import os
 import matplotlib.image as mpimg
 import cv2
@@ -13,15 +13,6 @@ np.random.seed(666)
 IM_HEIGHT = 160
 IM_WIDTH = 320
 IM_CHANNELS = 3
-
-def preprocess(image):
-    # remove the sky
-    image = image[60:-25, :, :] 
-    # resize image
-    image = cv2.resize(image, (IM_WIDTH, IM_HEIGHT), cv2.INTER_AREA)
-    # rgb2yuv this is what the nvvidia model does
-    image = cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
-    return image
 
 def augment_images(data_dir, center, left, right, steering_angle):
     # Choose an image from left, center or right and adjust steering angle
@@ -51,14 +42,14 @@ def batch_generator(data_dir, image_paths, steering_angles, batch_size, is_train
         for index in np.random.permutation(image_paths.shape[0]):
             center, left, right = image_paths[index]
             steering_angle = steering_angles[index]
-            # if is_training and np.random.rand() < 0.6:
-            #     # augment data when in training
-            #     image, steering_angle = augment_images(data_dir, center, left, right, steering_angle)
-            # else:
+            if is_training and np.random.rand() < 0.6:
+                # augment data when in training
+                image, steering_angle = augment_images(data_dir, center, left, right, steering_angle)
+            else:
                 # chooses image from center
-            image = mpimg.imread(os.path.join(data_dir, center.strip()))
+                image = mpimg.imread(os.path.join(data_dir, center.strip()))
             # add image and steering angle
-            images[i] = preprocess(image)
+            images[i] = image
             steers[i] = steering_angle
             i += 1
             if i == batch_size:
@@ -67,9 +58,9 @@ def batch_generator(data_dir, image_paths, steering_angles, batch_size, is_train
 
 # load data
 data_dir = './data'
-test_size = .05
+test_size = .02
 
-data_df = pd.read_csv(os.path.join(data_dir,'driving_log.csv'))
+data_df = pd.read_csv(os.path.join(data_dir,'driving_log2.csv'))
 data_df.columns = ['center','left','right','steering','throttle','break','speed']
 
 X = data_df[['center', 'left', 'right']].values
@@ -83,7 +74,8 @@ keep_prob = .6
 # https://devblogs.nvidia.com/parallelforall/deep-learning-self-driving-cars/
 # nvidia's network architecture
 model = Sequential()
-model.add(Lambda(lambda x: x/127.5-1.0, input_shape=INPUT_SHAPE))
+model.add(Cropping2D(cropping=((50,20), (0,0)), input_shape=(160,320,3)))
+model.add(Lambda(lambda x: x/127.5-1.0))
 model.add(Conv2D(24, 5, activation='elu', strides=(2, 2)))
 model.add(Conv2D(36, 5, activation='elu', strides=(2, 2)))
 model.add(Conv2D(48, 5, activation='elu', strides=(2, 2)))
@@ -100,8 +92,8 @@ model.summary()
 # train model
 learning_rate = 1.0e-4
 batch_size = 50
-steps_per_epoch = 200
-nb_epoch = 4
+steps_per_epoch = 500
+nb_epoch = 1
 
 model.compile(loss='mean_squared_error', optimizer=Adam(lr=learning_rate))
 
