@@ -58,9 +58,9 @@ def batch_generator(data_dir, image_paths, steering_angles, batch_size, is_train
 
 # load data
 data_dir = './data'
-test_size = .02
+test_size = .1
 
-data_df = pd.read_csv(os.path.join(data_dir,'driving_log2.csv'))
+data_df = pd.read_csv(os.path.join(data_dir,'driving_log3.csv'))
 data_df.columns = ['center','left','right','steering','throttle','break','speed']
 
 X = data_df[['center', 'left', 'right']].values
@@ -93,7 +93,7 @@ model.summary()
 learning_rate = 1.0e-4
 batch_size = 50
 steps_per_epoch = 500
-nb_epoch = 1
+nb_epoch = 6
 
 model.compile(loss='mean_squared_error', optimizer=Adam(lr=learning_rate))
 
