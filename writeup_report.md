@@ -51,7 +51,7 @@ The model.py file contains the code for training and saving the convolution neur
 
 ####1. An appropriate model architecture has been employed
 
-The model I chose was based on nvidia's network architecture described on [this nvidia's blog](https://devblogs.nvidia.com/parallelforall/deep-learning-self-driving-cars/ "End-to-End Deep Learning for Self-Driving Cars")
+The model I chose was based on nvidia's network architecture described on [this article](https://arxiv.org/pdf/1604.07316v1.pdf "End-to-End Deep Learning for Self-Driving Cars")
 
 The model consists of a convolution neural network composed by a cropping layer followed by a normalization layer, 5 convolutional layers and 4 fully connected layers (model.py lines 76-90) 
 
