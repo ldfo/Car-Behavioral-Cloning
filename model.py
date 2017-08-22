@@ -72,7 +72,7 @@ X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=test_size,
 INPUT_SHAPE = (IM_HEIGHT, IM_WIDTH, IM_CHANNELS)
 keep_prob = .6
 # https://devblogs.nvidia.com/parallelforall/deep-learning-self-driving-cars/
-# nvidia's network architecture
+# based on nvidia's network architecture
 model = Sequential()
 model.add(Cropping2D(cropping=((50,20), (0,0)), input_shape=(160,320,3)))
 model.add(Lambda(lambda x: x/127.5-1.0))
