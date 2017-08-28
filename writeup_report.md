@@ -1,11 +1,11 @@
 # **Behavioral Cloning**
 
-## Writeup
+## Write-up
 
 ---
 
 The goals of this project are the following:
-* Use the simulator to collect data of good driving behavior
+* Use the simulator to collect data on good driving behavior
 * Build, a convolution neural network in Keras that predicts steering angles from images
 * Train and validate the model with a training and validation set
 * Test that the model successfully drives around track one without leaving the road
@@ -49,25 +49,25 @@ The model.py file contains the code for training and saving the convolution neur
 
 #### 1. An appropriate model architecture has been employed
 
-The model I chose was based on nvidia's network architecture described on [this article](https://arxiv.org/pdf/1604.07316v1.pdf "End-to-End Deep Learning for Self-Driving Cars")
+The model I chose was based on Nvidia's network architecture described in [this article](https://arxiv.org/pdf/1604.07316v1.pdf "End-to-End Deep Learning for Self-Driving Cars")
 
-The model consists of a convolution neural network composed by a cropping layer followed by a normalization layer, 5 convolutional layers and 4 fully connected layers (model.py lines 76-90)
+The model consists of a convolution neural network composed of a cropping layer followed by a normalization layer, 5 convolutional layers and 4 fully connected layers (model.py lines 76-90)
 
 The model includes ELU layers to introduce nonlinearity, I chose ELU instead of RELU because I saw marginally faster convergence rates. The data is normalized in the model using a Keras lambda layer.
 
 #### 2. Attempts to reduce overfitting in the model
 
-The model contains dropout layers in order to reduce overfitting.
+The model contains drop out layers in order to reduce overfitting.
 
 The model was tested by running it through the simulator and ensuring that the vehicle could stay on the track.
 
 #### 3. Model parameter tuning
 
-The model used an adam optimizer, with a learning rate of 1.0e-4 (line 98 of model.py).
+The model used an Adam optimizer, with a learning rate of 1.0e-4 (line 98 of model.py).
 
 #### 4. Appropriate training data
 
-Training data was chosen to keep the vehicle driving on the road. I used a combination of center lane driving, recovering from the left and right sides of the road ... Training data was chosen to keep the vehicle driving on the road. First I drove on the center of the track on one direction and then on the opposite direction. I also recorded the car recovering from the left and right sides of the track.
+Training data was chosen to keep the vehicle driving on the road. I used a combination of center lane driving, recovering from the left and right sides of the road ... Training data was chosen to keep the vehicle driving on the road. First I drove to the center of the track in one direction and then in the opposite direction. I also recorded the car recovering from the left and right sides of the track.
 Then I noticed my training data was predominantly straight driving (steering = 0), so I got rid of all the data where steering = 0 just for balancing the dataset and for the algorithm to learn more easily to make turns. This helped the car to steer correctly.
 
 
@@ -75,22 +75,22 @@ Then I noticed my training data was predominantly straight driving (steering = 0
 
 #### 1. Solution Design Approach
 
-I read nvidia's article so I decided that was a good starting point for the network.
+I read Nvidia's article so I decided that was a good starting point for the network.
 
-In order to gauge how well the model was working, I split my image and steering angle data into a training and validation set. The first model I trained didn't perform well at all, the car veered off the track immediatly and I realized that was because I was cropping outside the network with opencv and I wasn't cropping on the drive.py so I decided to include all the preprocessing of the network inside keras.
+In order to gauge how well the model was working, I split my image and steering angle data into a training and validation set. The first model I trained didn't perform well at all, the car veered off the track immediately and I realized that was because I was cropping outside the network with OpenCV and I wasn't cropping on the drive.py, so I decided to include all the preprocessing of the network inside keras.
 
 Then I had to tune the hyperparameters for getting good convergence and with decent hyperparameters and the dropout layer I was getting a decently low mean squared error.
 
-But when I tested the car on the track it was just driving straight and falling into the lake. I tried augmenting the training data by randomly choosing from left right and center images and correcting for the steering with +- .02 (see function augment_images on line 17 in model.py). Also I implemented a random flip on the image.
-This improvements helped the car to get past the first curves but it kept veering of the track.
+But when I tested the car on the track it was just driving straight and falling into the lake. I tried augmenting the training data by randomly choosing from left right and center images and correcting for the steering with +- .02 (see function augment_images on line 17 in model.py). Also, I implemented a random flip on the image.
+This improvement helped the car to get past the first curves but it kept veering off the track.
 
 I realized that my training data was 80% steering = 0 so I got rid of all the data where steering = 0 and it helped a lot.
 
-The car drove almost all the track but fell off on certain spots so I recorded more recovery data from the parts where the car was falling off and I got the car driving all the track without leaving the road.
+The car drove almost all the track but fell off in certain spots so I recorded more recovery data from the parts where the car was falling off and I got the car driving all the track without leaving the road.
 
 #### 2. Final Model Architecture
 
-The final model architecture (model.py lines 76-90) consisted of a CNN based on nvidia's network. Here is an image from nvidia's article showing the network's architecture.
+The final model architecture (model.py lines 76-90) consisted of a CNN based on Nvidia's network. Here is an image from Nvidia's article showing the network's architecture.
 
 ```
 model = Sequential()
@@ -124,7 +124,7 @@ I then recorded the vehicle recovering from the left side and right sides of the
 ![alt text][image4]
 ![alt text][image5]
 
-To augment the data sat, I also applied a random flip to the training images and angles thinking that this would capture the behavior of the car turning both sides better.
+To augment the data set, I also applied a random flip to the training images and angles thinking that this would capture the behavior of the car turning both sides better.
 
 After the collection process, I had 3487 data points. I observed the distribution of the steering and decided to drop the data points with steering = 0.
 Here is the distribution before and after this procedure:
