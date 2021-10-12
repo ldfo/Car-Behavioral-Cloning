@@ -30,7 +30,7 @@ nbformat==4.3.0
 notebook
 numpy==1.12.0
 olefile==0.44
-opencv-python==3.2.0.8
+opencv-python==3.4.0.12
 packaging==16.8
 pandas==0.20.3
 pandocfilters==1.4.1
